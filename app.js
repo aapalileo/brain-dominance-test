@@ -143,7 +143,7 @@ function renderResults(){
   ranked.forEach((x,i)=>{ const m=QUADRANTS[x.q];
     ranksHtml+=`<div class="rank ${i===0?'is-primary':''}">
       <div class="badge">${x.q}</div>
-      <div><div class="lvl">${byQ[x.q].label}</div><div class="qn">${m.name} &middot; <span style="color:var(--muted);font-weight:400;font-size:14px">${m.tag}</span></div><div class="qblurb">${m.blurb}</div><div class="qlevel">${LEVELDESC[byQ[x.q].label]}</div></div>
+      <div><div class="lvl">${byQ[x.q].label}</div><div class="qn">${m.name} &middot; <span style="color:var(--muted);font-weight:400;font-size:14px">${m.tag}</span></div><div class="qwords">${m.words}</div><div class="qblurb">${m.blurb}</div><div class="qlevel">${LEVELDESC[byQ[x.q].label]}</div></div>
       <div class="score">${pct(x.combined)}<small>combined</small></div>
     </div>`;
   });
@@ -254,7 +254,7 @@ async function drawShareCard(){
   try{ if(document.fonts&&document.fonts.ready) await document.fonts.ready; }catch(e){}
   var r=computeScores(), byQ=r.byQ, ranked=r.ranked;
   var nm=(state.participant["Name"]||"").trim();
-  var title=nm?nm+"’s Whole Brain Profile":"My Whole Brain Profile";
+  var title=nm?nm+"’s Whole-Brain Profile":"My Whole-Brain Profile";
   var pm=QUADRANTS[ranked[0].q];
   g.fillStyle="#0A0A0A"; g.fillRect(0,0,W,H);
   await new Promise(function(res){ var img=new Image();
@@ -268,20 +268,21 @@ async function drawShareCard(){
   g.fillStyle="#FB5000"; g.font="700 76px 'General Sans',sans-serif"; g.fillText(pm.name,W/2,328);
   g.fillStyle="#C8C8C8"; g.font="400 26px 'General Sans',sans-serif"; g.fillText(pm.tag,W/2,374);
   drawCardChart(g,byQ,W/2,588,172);
-  var levels=["Primary","Secondary","Tertiary","Fourth"], y=852;
+  var levels=["Primary","Secondary","Tertiary","Fourth"], y=832;
   ranked.forEach(function(x,i){ var isP=i===0;
     g.textAlign="left"; g.textBaseline="alphabetic";
     g.fillStyle=isP?"#FB5000":"#8A8A8A"; g.font="500 17px 'IBM Plex Mono',monospace"; g.fillText(levels[i].toUpperCase(),120,y);
     g.fillStyle="#fff"; g.font="600 34px 'General Sans',sans-serif"; g.fillText(QUADRANTS[x.q].name,120,y+36);
-    g.textAlign="right"; g.fillStyle=isP?"#FB5000":"#C8C8C8"; g.font="700 40px 'General Sans',sans-serif"; g.fillText(Math.round(x.combined*100)+"%",960,y+26);
-    y+=92; });
+    g.fillStyle="#8A8A8A"; g.font="400 20px 'General Sans',sans-serif"; g.fillText(QUADRANTS[x.q].words,120,y+64);
+    g.textAlign="right"; g.fillStyle=isP?"#FB5000":"#C8C8C8"; g.font="700 40px 'General Sans',sans-serif"; g.fillText(Math.round(x.combined*100)+"%",962,y+34);
+    y+=106; });
   g.textAlign="center"; g.fillStyle="#8A8A8A"; g.font="400 19px 'IBM Plex Mono',monospace";
   g.fillText("www.ciabootleg.ph    ·    info@bootleg.ph    ·    @ciabootlegmanila",W/2,1300);
 }
 function downloadShareCard(){
   var cv=document.getElementById('sharecard'); if(!cv) return;
   cv.toBlob(function(b){ if(!b) return; var url=URL.createObjectURL(b), a=document.createElement('a');
-    a.href=url; a.download=((state.participant["Name"]||"whole-brain")+" whole brain profile").trim().replace(/\s+/g,'-').toLowerCase()+".png";
+    a.href=url; a.download=((state.participant["Name"]||"whole-brain")+" whole-brain profile").trim().replace(/\s+/g,'-').toLowerCase()+".png";
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){URL.revokeObjectURL(url);},1500);
   },'image/png');
 }
