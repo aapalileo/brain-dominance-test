@@ -148,7 +148,9 @@ function renderResults(){
       <div class="ptag">${pm.tag} &middot; your primary preference</div>
       ${who?`<div class="who">${who}${state.participant["Position"]?' / '+state.participant["Position"]:''}</div>`:''}
     </div>
-    <div class="card-dark"><div class="chart-wrap"><canvas id="radar"></canvas></div></div>
+    <div class="card-dark">${radarSVG(byQ)}
+      <div class="radar-legend"><span><i style="background:#C8C8C8"></i>Likert</span><span><i style="background:#FB5000"></i>Forced-Choice</span></div>
+    </div>
     ${flag}
     <div class="ranks">${ranksHtml}</div>
     <div class="card-dark">
@@ -159,48 +161,29 @@ function renderResults(){
       </table>
       <p class="muted" style="margin-top:12px">Combined blends Likert preference with forced-choice tilt (weighted ${pct(WEIGHTS.likert)} / ${pct(WEIGHTS.forced)}).</p>
     </div>`;
-  drawRadar(byQ);
 }
 
-function drawRadar(byQ){
-  if(state.chart) state.chart.destroy();
-  const ctx=$('#radar').getContext('2d');
-  state.chart=new Chart(ctx,{
-    type:'radar',
-    data:{labels:order.map(q=>QUADRANTS[q].name),datasets:[
-      {label:'Likert',data:order.map(q=>Math.round(byQ[q].likertPct*100)),borderColor:'#C8C8C8',backgroundColor:'rgba(200,200,200,.12)',borderWidth:2,pointBackgroundColor:'#C8C8C8',pointRadius:3},
-      {label:'Forced-Choice',data:order.map(q=>Math.round(byQ[q].forcedPct*100)),borderColor:'#FB5000',backgroundColor:'rgba(251,80,0,.15)',borderWidth:2,pointBackgroundColor:'#FB5000',pointRadius:3}
-    ]},
-    options:{responsive:true,scales:{r:{suggestedMin:0,suggestedMax:100,angleLines:{color:'#2A2A2A'},grid:{color:'#2A2A2A'},ticks:{stepSize:25,color:'#666',backdropColor:'transparent',font:{size:10}},pointLabels:{color:'#fff',font:{size:14,weight:'600',family:"'General Sans'"}}}},plugins:{legend:{position:'bottom',labels:{color:'#C8C8C8',font:{family:"'IBM Plex Mono'",size:11},boxWidth:12}}}}
+function radarSVG(byQ){
+  const cx=170, cy=152, R=106;
+  const dir={A:[-0.7071,-0.7071], D:[0.7071,-0.7071], B:[-0.7071,0.7071], C:[0.7071,0.7071]};
+  const orderC=["A","D","C","B"];
+  const pt=(q,v)=>[cx+dir[q][0]*R*v, cy+dir[q][1]*R*v];
+  const poly=(key)=>orderC.map(q=>pt(q,byQ[q][key]).map(n=>n.toFixed(1)).join(",")).join(" ");
+  let grid="";
+  [0.25,0.5,0.75,1].forEach(f=>{ grid+=`<circle cx="${cx}" cy="${cy}" r="${(R*f).toFixed(1)}" fill="none" stroke="#2A2A2A" stroke-width="1"/>`; });
+  orderC.forEach(q=>{ const [x,y]=pt(q,1); grid+=`<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#2A2A2A" stroke-width="1"/>`; });
+  const dots=(key,c)=>orderC.map(q=>{const[x,y]=pt(q,byQ[q][key]);return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.2" fill="${c}"/>`;}).join("");
+  const meta={A:["Analyst","end"],D:["Dreamer","start"],B:["Builder","end"],C:["Connector","start"]};
+  let labels="";
+  orderC.forEach(q=>{ const [x,y]=pt(q,1.17); const [nm,anch]=meta[q];
+    const yy = dir[q][1]<0 ? y-3 : y+13;
+    labels+=`<text x="${x.toFixed(1)}" y="${yy.toFixed(1)}" fill="#fff" font-size="13.5" font-weight="500" text-anchor="${anch}" font-family="'General Sans',sans-serif">${nm}</text>`;
   });
+  return `<svg viewBox="0 0 340 300" width="100%" style="max-width:430px;display:block;margin:0 auto" role="img" aria-label="Whole-Brain profile chart">
+    ${grid}
+    <polygon points="${poly('likertPct')}" fill="rgba(200,200,200,.12)" stroke="#C8C8C8" stroke-width="2"/>
+    <polygon points="${poly('forcedPct')}" fill="rgba(251,80,0,.15)" stroke="#FB5000" stroke-width="2"/>
+    ${dots('likertPct','#C8C8C8')}${dots('forcedPct','#FB5000')}
+    ${labels}
+  </svg>`;
 }
-
-
-// ---- Optional: save each submission to a Google Sheet (via Apps Script web app) ----
-const QNAME={A:"Analyst",B:"Builder",C:"Connector",D:"Dreamer"};
-function buildRecord(){
-  const {byQ,ranked}=computeScores();
-  const p=state.participant, r={};
-  r["Timestamp"]=new Date().toISOString();
-  PARTICIPANT_FIELDS.forEach(f=>{ r[f]=p[f]||""; });
-  r["Primary"]=QNAME[ranked[0].q]; r["Secondary"]=QNAME[ranked[1].q];
-  r["Tertiary"]=QNAME[ranked[2].q]; r["Fourth"]=QNAME[ranked[3].q];
-  order.forEach(q=>{ r[QNAME[q]+" Likert %"]=Math.round(byQ[q].likertPct*100);
-    r[QNAME[q]+" FC %"]=Math.round(byQ[q].forcedPct*100);
-    r[QNAME[q]+" Combined %"]=Math.round(byQ[q].combined*100); });
-  r["Raw answers (JSON)"]=JSON.stringify({likert:state.likert,forced:state.forced});
-  return r;
-}
-function saveToSheet(){
-  if(typeof SHEET_ENDPOINT==="undefined" || !SHEET_ENDPOINT) return;
-  try{
-    fetch(SHEET_ENDPOINT,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(buildRecord())});
-  }catch(e){ /* never block the participant from seeing results */ }
-}
-// If saving is enabled, make the intro fineprint honest about it.
-(function(){
-  if(typeof SHEET_ENDPOINT!=="undefined" && SHEET_ENDPOINT){
-    const f=document.querySelector('.fineprint');
-    if(f) f.textContent="About 8-10 minutes · No right or wrong answers · Your responses are recorded for your facilitator.";
-  }
-})();
