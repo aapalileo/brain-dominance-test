@@ -187,3 +187,32 @@ function radarSVG(byQ){
     ${labels}
   </svg>`;
 }
+
+
+// ---- Optional: save each submission to a Google Sheet (via Apps Script web app) ----
+const QNAME={A:"Analyst",B:"Builder",C:"Connector",D:"Dreamer"};
+function buildRecord(){
+  const {byQ,ranked}=computeScores();
+  const p=state.participant, r={};
+  r["Timestamp"]=new Date().toISOString();
+  PARTICIPANT_FIELDS.forEach(f=>{ r[f]=p[f]||""; });
+  r["Primary"]=QNAME[ranked[0].q]; r["Secondary"]=QNAME[ranked[1].q];
+  r["Tertiary"]=QNAME[ranked[2].q]; r["Fourth"]=QNAME[ranked[3].q];
+  order.forEach(q=>{ r[QNAME[q]+" Likert %"]=Math.round(byQ[q].likertPct*100);
+    r[QNAME[q]+" FC %"]=Math.round(byQ[q].forcedPct*100);
+    r[QNAME[q]+" Combined %"]=Math.round(byQ[q].combined*100); });
+  r["Raw answers (JSON)"]=JSON.stringify({likert:state.likert,forced:state.forced});
+  return r;
+}
+function saveToSheet(){
+  if(typeof SHEET_ENDPOINT==="undefined" || !SHEET_ENDPOINT) return;
+  try{
+    fetch(SHEET_ENDPOINT,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(buildRecord())});
+  }catch(e){ /* never block the participant from seeing results */ }
+}
+(function(){
+  if(typeof SHEET_ENDPOINT!=="undefined" && SHEET_ENDPOINT){
+    const f=document.querySelector('.fineprint');
+    if(f) f.textContent="About 8-10 minutes · No right or wrong answers · Your responses are recorded for your facilitator.";
+  }
+})();
