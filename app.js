@@ -143,7 +143,7 @@ function renderResults(){
   ranked.forEach((x,i)=>{ const m=QUADRANTS[x.q];
     ranksHtml+=`<div class="rank ${i===0?'is-primary':''}">
       <div class="badge">${x.q}</div>
-      <div><div class="lvl">${byQ[x.q].label}</div><div class="qn">${m.name} &middot; <span style="color:var(--muted);font-weight:400;font-size:14px">${m.tag}</span></div><div class="qblurb">${LEVELDESC[byQ[x.q].label]}</div></div>
+      <div><div class="lvl">${byQ[x.q].label}</div><div class="qn">${m.name} &middot; <span style="color:var(--muted);font-weight:400;font-size:14px">${m.tag}</span></div><div class="qblurb">${m.blurb}</div><div class="qlevel">${LEVELDESC[byQ[x.q].label]}</div></div>
       <div class="score">${pct(x.combined)}<small>combined</small></div>
     </div>`;
   });
