@@ -1,16 +1,16 @@
 // ---- Brain Dominance Test content & config ----
 // Quadrant meta
 const QUADRANTS = {
-  A: { name: "Analyst",   color: "#2E5FA3", tag: "Logical / Analytical",
+  A: { name: "Analyst",   color: "#2E5FA3", tag: "Logical / Analytical", words: "Logical. Analytical. Factual.",
        blurb: "Fact-based, quantitative, and precise. You like to analyze, measure, and reason your way to the bottom line.",
        strengths: "Problem-solving, critical analysis, technical & financial reasoning, clear logic." },
-  B: { name: "Builder",   color: "#4C8C2B", tag: "Organized / Sequential",
+  B: { name: "Builder",   color: "#4C8C2B", tag: "Organized / Sequential", words: "Organized. Sequential. Detailed.",
        blurb: "Structured, detailed, and dependable. You like clear plans, proven procedures, and getting things done step by step.",
        strengths: "Planning, execution, reliability, follow-through, attention to detail." },
-  C: { name: "Connector", color: "#C0392B", tag: "Interpersonal / Feeling",
+  C: { name: "Connector", color: "#C0392B", tag: "Interpersonal / Feeling", words: "Empathetic. Expressive. Relational.",
        blurb: "People-oriented, empathetic, and expressive. You tune into how others feel and build strong relationships.",
        strengths: "Teamwork, empathy, communication, teaching, building consensus." },
-  D: { name: "Dreamer",   color: "#E1A200", tag: "Holistic / Creative",
+  D: { name: "Dreamer",   color: "#E1A200", tag: "Holistic / Creative", words: "Creative. Integrative. Imaginative.",
        blurb: "Imaginative, big-picture, and intuitive. You explore possibilities, connect ideas, and look to the future.",
        strengths: "Vision, innovation, synthesis, intuition, tolerating ambiguity." }
 };

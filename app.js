@@ -143,17 +143,10 @@ function renderResults(){
   ranked.forEach((x,i)=>{ const m=QUADRANTS[x.q];
     ranksHtml+=`<div class="rank ${i===0?'is-primary':''}">
       <div class="badge">${x.q}</div>
-      <div><div class="lvl">${byQ[x.q].label}</div><div class="qn">${m.name} &middot; <span style="color:var(--muted);font-weight:400;font-size:14px">${m.tag}</span></div><div class="qwords">${m.words}</div><div class="qblurb">${m.blurb}</div><div class="qlevel">${LEVELDESC[byQ[x.q].label]}</div></div>
+      <div><div class="lvl">${byQ[x.q].label}</div><div class="qn">${m.name} &middot; <span style="color:var(--muted);font-weight:400;font-size:14px">${m.tag}</span></div><div class="qwords">${m.words||""}</div><div class="qblurb">${m.blurb}</div><div class="qlevel">${LEVELDESC[byQ[x.q].label]}</div></div>
       <div class="score">${pct(x.combined)}<small>combined</small></div>
     </div>`;
   });
-
-  let flag='';
-  for(const q of order){ const x=byQ[q];
-    if(x.likertPct>=0.75 && x.fcPoints<=3 && x.label!=="Primary"){
-      flag=`<div class="flag no-print"><b>Note</b> &mdash; you rated <b>${QUADRANTS[q].name}</b> highly, but when forced to choose you leaned elsewhere: a comfortable style you don't always lead with.</div>`; break;
-    }
-  }
 
   $('#results-content').innerHTML=`
     <div class="result-hero">
@@ -163,7 +156,6 @@ function renderResults(){
       ${who?`<div class="who">${who}${state.participant["Position"]?' / '+state.participant["Position"]:''}</div>`:''}
     </div>
     <div class="card-dark">${radarSVG(byQ)}</div>
-    ${flag}
     <div class="ranks">${ranksHtml}</div>
     <div class="card-dark share-block">
       <h3>Save your profile</h3>
@@ -273,7 +265,7 @@ async function drawShareCard(){
     g.textAlign="left"; g.textBaseline="alphabetic";
     g.fillStyle=isP?"#FB5000":"#8A8A8A"; g.font="500 17px 'IBM Plex Mono',monospace"; g.fillText(levels[i].toUpperCase(),120,y);
     g.fillStyle="#fff"; g.font="600 34px 'General Sans',sans-serif"; g.fillText(QUADRANTS[x.q].name,120,y+36);
-    g.fillStyle="#8A8A8A"; g.font="400 20px 'General Sans',sans-serif"; g.fillText(QUADRANTS[x.q].words,120,y+64);
+    g.fillStyle="#8A8A8A"; g.font="400 20px 'General Sans',sans-serif"; g.fillText(QUADRANTS[x.q].words||"",120,y+64);
     g.textAlign="right"; g.fillStyle=isP?"#FB5000":"#C8C8C8"; g.font="700 40px 'General Sans',sans-serif"; g.fillText(Math.round(x.combined*100)+"%",962,y+34);
     y+=106; });
   g.textAlign="center"; g.fillStyle="#8A8A8A"; g.font="400 19px 'IBM Plex Mono',monospace";
