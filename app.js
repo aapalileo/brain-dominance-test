@@ -1,6 +1,12 @@
 const state = { participant:{}, likert:{}, forced:{}, likertItems:[], chart:null };
 const $ = s => document.querySelector(s);
 const order = ["A","B","C","D"];
+const LEVELDESC = {
+  Primary:"You lead with this. Your strongest, most natural thinking style.",
+  Secondary:"Your reliable back-up. You use it comfortably when needed.",
+  Tertiary:"Available when required, but it takes more effort and energy.",
+  Fourth:"Your least preferred style. You tend to avoid it."
+};
 
 // interleave Likert A,B,C,D
 for(let i=0;i<9;i++){ for(const q of order){ state.likertItems.push({q, text: LIKERT[q][i]}); } }
@@ -124,7 +130,7 @@ function renderResults(){
   ranked.forEach((x,i)=>{ const m=QUADRANTS[x.q];
     ranksHtml+=`<div class="rank ${i===0?'is-primary':''}">
       <div class="badge">${x.q}</div>
-      <div><div class="lvl">${byQ[x.q].label}</div><div class="qn">${m.name} &middot; <span style="color:var(--muted);font-weight:400;font-size:14px">${m.tag}</span></div><div class="qblurb">${m.blurb}</div></div>
+      <div><div class="lvl">${byQ[x.q].label}</div><div class="qn">${m.name} &middot; <span style="color:var(--muted);font-weight:400;font-size:14px">${m.tag}</span></div><div class="qblurb">${LEVELDESC[byQ[x.q].label]}</div></div>
       <div class="score">${pct(x.combined)}<small>combined</small></div>
     </div>`;
   });
@@ -136,11 +142,6 @@ function renderResults(){
     }
   }
 
-  let rows='';
-  order.forEach(q=>{ const x=byQ[q]; const m=QUADRANTS[q];
-    rows+=`<tr><td>${m.name}</td><td>${pct(x.likertPct)}</td><td>${pct(x.forcedPct)}</td><td><b>${pct(x.combined)}</b></td><td>${x.label}</td></tr>`;
-  });
-
   $('#results-content').innerHTML=`
     <div class="result-hero">
       <div class="eyebrow">Your Whole-Brain Profile</div>
@@ -148,19 +149,9 @@ function renderResults(){
       <div class="ptag">${pm.tag} &middot; your primary preference</div>
       ${who?`<div class="who">${who}${state.participant["Position"]?' / '+state.participant["Position"]:''}</div>`:''}
     </div>
-    <div class="card-dark">${radarSVG(byQ)}
-      <div class="radar-legend"><span><i style="background:#C8C8C8"></i>Likert</span><span><i style="background:#FB5000"></i>Forced-Choice</span></div>
-    </div>
+    <div class="card-dark">${radarSVG(byQ)}</div>
     ${flag}
-    <div class="ranks">${ranksHtml}</div>
-    <div class="card-dark">
-      <h3>Score detail</h3>
-      <table class="detail-table">
-        <thead><tr><th>Quadrant</th><th>Likert</th><th>Forced-Choice</th><th>Combined</th><th>Preference</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-      <p class="muted" style="margin-top:12px">Combined blends Likert preference with forced-choice tilt (weighted ${pct(WEIGHTS.likert)} / ${pct(WEIGHTS.forced)}).</p>
-    </div>`;
+    <div class="ranks">${ranksHtml}</div>`;
 }
 
 function radarSVG(byQ){
@@ -181,9 +172,8 @@ function radarSVG(byQ){
   });
   return `<svg viewBox="0 0 340 300" width="100%" style="max-width:430px;display:block;margin:0 auto" role="img" aria-label="Whole-Brain profile chart">
     ${grid}
-    <polygon points="${poly('likertPct')}" fill="rgba(200,200,200,.12)" stroke="#C8C8C8" stroke-width="2"/>
-    <polygon points="${poly('forcedPct')}" fill="rgba(251,80,0,.15)" stroke="#FB5000" stroke-width="2"/>
-    ${dots('likertPct','#C8C8C8')}${dots('forcedPct','#FB5000')}
+    <polygon points="${poly('combined')}" fill="rgba(251,80,0,.18)" stroke="#FB5000" stroke-width="2.5"/>
+    ${dots('combined','#FB5000')}
     ${labels}
   </svg>`;
 }
