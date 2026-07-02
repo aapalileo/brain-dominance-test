@@ -100,3 +100,8 @@ const QICON = {
 // Paste your Google Apps Script Web App URL here to save each submission to a Google Sheet.
 // Leave as "" to keep everything local (nothing leaves the browser). See google-apps-script.gs + README.
 const SHEET_ENDPOINT = "";
+
+// Companies for the "Company / Organization" dropdown. Add each client here so entries
+// stay consistent (prevents "Bootleg" vs "CIA Bootleg" splits). You can also send a
+// company-specific link that locks the value, e.g.  yoursite.vercel.app/?org=CIA%20Bootleg
+const COMPANIES = ["CIA Bootleg"];

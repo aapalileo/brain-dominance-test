@@ -1,5 +1,6 @@
 const state = { participant:{}, likert:{}, forced:{}, likertItems:[], chart:null };
 const $ = s => document.querySelector(s);
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[c];});}
 const order = ["A","B","C","D"];
 const LEVELDESC = {
   Primary:"You lead with this. Your strongest, most natural thinking style.",
@@ -32,6 +33,17 @@ function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.remove(
 // Participant fields
 (function(){
   const c=$('#participant-fields');
+  const urlOrg=new URLSearchParams(location.search).get('org');
+  const wrap=document.createElement('div'); wrap.className='field';
+  if(urlOrg){
+    state.participant["Company"]=urlOrg.trim();
+    wrap.innerHTML=`<label>Company / Organization</label><input type="text" value="${escapeHtml(urlOrg.trim())}" readonly style="opacity:.7;cursor:not-allowed">`;
+  } else if(typeof COMPANIES!=="undefined" && COMPANIES.length){
+    wrap.innerHTML=`<label for="pf-company">Company / Organization</label><select id="pf-company"><option value="">Select your company…</option>${COMPANIES.map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join('')}</select>`;
+  } else {
+    wrap.innerHTML=`<label for="pf-company">Company / Organization</label><input id="pf-company" type="text" autocomplete="off">`;
+  }
+  c.appendChild(wrap);
   PARTICIPANT_FIELDS.forEach((f,i)=>{
     const id='pf'+i;
     const div=document.createElement('div'); div.className='field';
@@ -83,7 +95,8 @@ function updateProgress(which){
 }
 
 $('#start-btn').addEventListener('click',()=>{
-  document.querySelectorAll('#participant-fields input').forEach(i=>{ if(i.value.trim()) state.participant[i.dataset.field]=i.value.trim(); });
+  document.querySelectorAll('#participant-fields input').forEach(i=>{ if(i.dataset.field && i.value.trim()) state.participant[i.dataset.field]=i.value.trim(); });
+  const comp=document.getElementById('pf-company'); if(comp && comp.value.trim()) state.participant["Company"]=comp.value.trim();
   show('likert'); updateProgress('likert');
 });
 document.querySelectorAll('[data-goto]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.goto)));
@@ -151,7 +164,15 @@ function renderResults(){
     </div>
     <div class="card-dark">${radarSVG(byQ)}</div>
     ${flag}
-    <div class="ranks">${ranksHtml}</div>`;
+    <div class="ranks">${ranksHtml}</div>
+    <div class="card-dark share-block">
+      <h3>Save your profile</h3>
+      <canvas id="sharecard" class="share-canvas" width="1080" height="1350"></canvas>
+      <button id="dl-image" class="btn btn-primary btn-block" style="margin-top:16px">Download image</button>
+    </div>`;
+  drawShareCard();
+  var dl=document.getElementById('dl-image');
+  if(dl) dl.onclick=downloadShareCard;
 }
 
 function radarSVG(byQ){
@@ -185,6 +206,7 @@ function buildRecord(){
   const {byQ,ranked}=computeScores();
   const p=state.participant, r={};
   r["Timestamp"]=new Date().toISOString();
+  r["Company"]=p["Company"]||"";
   PARTICIPANT_FIELDS.forEach(f=>{ r[f]=p[f]||""; });
   r["Primary"]=QNAME[ranked[0].q]; r["Secondary"]=QNAME[ranked[1].q];
   r["Tertiary"]=QNAME[ranked[2].q]; r["Fourth"]=QNAME[ranked[3].q];
@@ -206,3 +228,60 @@ function saveToSheet(){
     if(f) f.textContent="About 8-10 minutes · No right or wrong answers · Your responses are recorded for your facilitator.";
   }
 })();
+
+
+// ---- Shareable profile image (canvas) ----
+function ctxTextW(g,t,font){ var p=g.font; g.font=font; var w=g.measureText(t).width; g.font=p; return w; }
+function drawCardChart(g,byQ,cx,cy,R){
+  var dir={A:[-0.7071,-0.7071],D:[0.7071,-0.7071],B:[-0.7071,0.7071],C:[0.7071,0.7071]};
+  var oc=["A","D","C","B"];
+  g.strokeStyle="#2A2A2A"; g.lineWidth=2;
+  [0.25,0.5,0.75,1].forEach(function(f){ g.beginPath(); g.arc(cx,cy,R*f,0,Math.PI*2); g.stroke(); });
+  oc.forEach(function(q){ g.beginPath(); g.moveTo(cx,cy); g.lineTo(cx+dir[q][0]*R,cy+dir[q][1]*R); g.stroke(); });
+  g.beginPath();
+  oc.forEach(function(q,i){ var x=cx+dir[q][0]*R*byQ[q].combined, y=cy+dir[q][1]*R*byQ[q].combined; if(i) g.lineTo(x,y); else g.moveTo(x,y); });
+  g.closePath(); g.fillStyle="rgba(251,80,0,.18)"; g.fill(); g.strokeStyle="#FB5000"; g.lineWidth=3; g.stroke();
+  oc.forEach(function(q){ var x=cx+dir[q][0]*R*byQ[q].combined, y=cy+dir[q][1]*R*byQ[q].combined; g.beginPath(); g.arc(x,y,6,0,Math.PI*2); g.fillStyle="#FB5000"; g.fill(); });
+  g.fillStyle="#fff"; g.font="500 23px 'General Sans',sans-serif";
+  var meta={A:["Analyst","right","bottom"],D:["Dreamer","left","bottom"],B:["Builder","right","top"],C:["Connector","left","top"]};
+  oc.forEach(function(q){ var x=cx+dir[q][0]*R*1.2, y=cy+dir[q][1]*R*1.2, m=meta[q]; g.textAlign=m[1]; g.textBaseline=m[2]; g.fillText(m[0],x,y); });
+  g.textAlign="center"; g.textBaseline="alphabetic";
+}
+async function drawShareCard(){
+  var cv=document.getElementById('sharecard'); if(!cv) return;
+  var g=cv.getContext('2d'); if(!g) return;
+  var W=1080,H=1350;
+  try{ if(document.fonts&&document.fonts.ready) await document.fonts.ready; }catch(e){}
+  var r=computeScores(), byQ=r.byQ, ranked=r.ranked;
+  var nm=(state.participant["Name"]||"").trim();
+  var title=nm?nm+"’s Whole Brain Profile":"My Whole Brain Profile";
+  var pm=QUADRANTS[ranked[0].q];
+  g.fillStyle="#0A0A0A"; g.fillRect(0,0,W,H);
+  await new Promise(function(res){ var img=new Image();
+    img.onload=function(){ var hh=48, ww=hh*img.width/img.height, tw=ctxTextW(g,"bootleg","600 34px 'General Sans',sans-serif"), total=ww+16+tw, sx=(W-total)/2;
+      g.drawImage(img,sx,62,ww,hh);
+      g.fillStyle="#fff"; g.font="600 34px 'General Sans',sans-serif"; g.textAlign="left"; g.textBaseline="middle"; g.fillText("bootleg",sx+ww+16,62+hh/2); res(); };
+    img.onerror=res; img.src="logo-mark.png"; });
+  g.textAlign="center"; g.textBaseline="alphabetic";
+  g.fillStyle="#fff"; g.font="500 40px 'General Sans',sans-serif"; g.fillText(title,W/2,202);
+  g.fillStyle="#FB5000"; g.font="500 20px 'IBM Plex Mono',monospace"; g.fillText("PRIMARY STYLE",W/2,258);
+  g.fillStyle="#FB5000"; g.font="700 76px 'General Sans',sans-serif"; g.fillText(pm.name,W/2,328);
+  g.fillStyle="#C8C8C8"; g.font="400 26px 'General Sans',sans-serif"; g.fillText(pm.tag,W/2,374);
+  drawCardChart(g,byQ,W/2,588,172);
+  var levels=["Primary","Secondary","Tertiary","Fourth"], y=852;
+  ranked.forEach(function(x,i){ var isP=i===0;
+    g.textAlign="left"; g.textBaseline="alphabetic";
+    g.fillStyle=isP?"#FB5000":"#8A8A8A"; g.font="500 17px 'IBM Plex Mono',monospace"; g.fillText(levels[i].toUpperCase(),120,y);
+    g.fillStyle="#fff"; g.font="600 34px 'General Sans',sans-serif"; g.fillText(QUADRANTS[x.q].name,120,y+36);
+    g.textAlign="right"; g.fillStyle=isP?"#FB5000":"#C8C8C8"; g.font="700 40px 'General Sans',sans-serif"; g.fillText(Math.round(x.combined*100)+"%",960,y+26);
+    y+=92; });
+  g.textAlign="center"; g.fillStyle="#8A8A8A"; g.font="400 19px 'IBM Plex Mono',monospace";
+  g.fillText("www.ciabootleg.ph    ·    info@bootleg.ph    ·    @ciabootlegmanila",W/2,1300);
+}
+function downloadShareCard(){
+  var cv=document.getElementById('sharecard'); if(!cv) return;
+  cv.toBlob(function(b){ if(!b) return; var url=URL.createObjectURL(b), a=document.createElement('a');
+    a.href=url; a.download=((state.participant["Name"]||"whole-brain")+" whole brain profile").trim().replace(/\s+/g,'-').toLowerCase()+".png";
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){URL.revokeObjectURL(url);},1500);
+  },'image/png');
+}

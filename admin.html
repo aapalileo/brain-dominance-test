@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin · Brain Dominance Test | Bootleg</title>
+<link rel="icon" href="favicon.png" type="image/png" />
+<link rel="preconnect" href="https://api.fontshare.com">
+<link rel="preconnect" href="https://cdn.fontshare.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .admin-wrap{max-width:1100px;margin:0 auto;padding:0 24px 60px}
+  .cfg{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin:22px 0}
+  .cfg .field{flex:1;min-width:220px;margin:0}
+  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:8px 0 22px}
+  .metric{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px}
+  .metric .k{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .metric .v{font-size:30px;font-weight:700;margin-top:6px}
+  .dist{display:grid;gap:8px;margin:6px 0 22px}
+  .dist-row{display:grid;grid-template-columns:110px 1fr 48px;align-items:center;gap:12px;font-size:14px}
+  .bar{height:10px;background:var(--orange);border-radius:99px;min-width:2px}
+  .bar-track{background:var(--surface-2);border-radius:99px;overflow:hidden}
+  table.adm{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:6px}
+  table.adm th,table.adm td{padding:10px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+  table.adm th{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:500}
+  table.adm td.primary{color:var(--orange);font-weight:600}
+  .tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r)}
+  .msg{font-family:var(--mono);font-size:13px;color:var(--muted);padding:20px 2px}
+  .toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:6px 0 14px}
+  .toolbar select{max-width:280px}
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="index.html"><img src="logo-mark.png" alt="" class="mark" /><span class="brand-name">bootleg</span></a>
+    <span class="header-tag">Admin · Results</span>
+  </div>
+</header>
+
+<main class="admin-wrap">
+  <div class="section-head"><div class="eyebrow">Brain Dominance Test</div><h2>Results dashboard</h2></div>
+
+  <div class="cfg">
+    <div class="field"><label for="url">Web app URL (ends in /exec)</label><input id="url" type="text" placeholder="https://script.google.com/macros/s/…/exec"></div>
+    <div class="field" style="flex:0 0 200px"><label for="key">Admin key</label><input id="key" type="password" placeholder="your ADMIN_KEY"></div>
+    <button id="load" class="btn btn-primary">Load results</button>
+  </div>
+
+  <div id="status" class="msg">Enter your web app URL and admin key, then Load results.</div>
+
+  <div id="dashboard" class="hidden">
+    <div class="metrics" id="metrics"></div>
+    <div class="section-head" style="padding:8px 0 2px"><div class="eyebrow">Primary style mix</div></div>
+    <div class="dist" id="dist"></div>
+    <div class="toolbar">
+      <span class="eyebrow" style="display:inline">Filter company</span>
+      <select id="companyFilter" class="field"></select>
+    </div>
+    <div class="tbl-wrap"><table class="adm" id="table"></table></div>
+  </div>
+</main>
+
+<script src="data.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+let ROWS=[];
+const QORDER=["Analyst","Builder","Connector","Dreamer"];
+
+function jsonp(url,key){
+  return new Promise((resolve,reject)=>{
+    const cb='__bdt_'+Math.random().toString(36).slice(2);
+    const sep=url.includes('?')?'&':'?';
+    const s=document.createElement('script');
+    let done=false;
+    window[cb]=d=>{done=true;resolve(d);clean();};
+    function clean(){delete window[cb];s.remove();}
+    s.onerror=()=>{if(!done){reject(new Error('Could not reach the web app URL.'));clean();}};
+    s.src=url+sep+'callback='+cb+'&key='+encodeURIComponent(key);
+    document.body.appendChild(s);
+    setTimeout(()=>{if(!done){reject(new Error('Timed out.'));clean();}},15000);
+  });
+}
+
+function canon(v){return String(v||'').trim();}
+
+function render(){
+  const filter=$('#companyFilter').value;
+  const rows=filter?ROWS.filter(r=>canon(r.Company)===filter):ROWS;
+  // metrics
+  const companies=[...new Set(ROWS.map(r=>canon(r.Company)).filter(Boolean))];
+  $('#metrics').innerHTML=`
+    <div class="metric"><div class="k">Responses${filter?' (filtered)':''}</div><div class="v">${rows.length}</div></div>
+    <div class="metric"><div class="k">Total responses</div><div class="v">${ROWS.length}</div></div>
+    <div class="metric"><div class="k">Companies</div><div class="v">${companies.length}</div></div>`;
+  // distribution by primary
+  const counts={}; QORDER.forEach(q=>counts[q]=0);
+  rows.forEach(r=>{const p=canon(r.Primary); if(counts[p]!==undefined)counts[p]++;});
+  const max=Math.max(1,...Object.values(counts));
+  $('#dist').innerHTML=QORDER.map(q=>`<div class="dist-row"><span>${q}</span><div class="bar-track"><div class="bar" style="width:${counts[q]/max*100}%"></div></div><span style="text-align:right">${counts[q]}</span></div>`).join('');
+  // table
+  const cols=["Company","Name","Position","Primary","Secondary","Tertiary","Fourth","Timestamp"];
+  const head='<thead><tr>'+cols.map(c=>`<th>${c}</th>`).join('')+'</tr></thead>';
+  const body='<tbody>'+rows.map(r=>'<tr>'+cols.map(c=>{
+    const val=c==='Timestamp'?String(r[c]||'').replace('T',' ').slice(0,16):(r[c]??'');
+    return `<td class="${c==='Primary'?'primary':''}">${String(val).replace(/</g,'&lt;')}</td>`;
+  }).join('')+'</tr>').join('')+'</tbody>';
+  $('#table').innerHTML=head+(rows.length?body:'');
+  if(!rows.length) $('#table').innerHTML=head+'<tbody><tr><td colspan="8" class="msg">No responses yet.</td></tr></tbody>';
+}
+
+function buildFilter(){
+  const companies=[...new Set(ROWS.map(r=>canon(r.Company)).filter(Boolean))].sort();
+  $('#companyFilter').innerHTML='<option value="">All companies</option>'+companies.map(c=>`<option value="${c.replace(/"/g,'&quot;')}">${c}</option>`).join('');
+}
+
+async function load(){
+  const url=$('#url').value.trim(), key=$('#key').value.trim();
+  if(!url||!key){ $('#status').textContent='Enter both the web app URL and the admin key.'; return; }
+  localStorage.setItem('bdt_url',url); localStorage.setItem('bdt_key',key);
+  $('#status').textContent='Loading…'; $('#dashboard').classList.add('hidden');
+  try{
+    const d=await jsonp(url,key);
+    if(!d.ok){ $('#status').textContent = d.error==='unauthorized' ? 'Admin key rejected. Check it matches ADMIN_KEY in the script.' : ('Error: '+d.error); return; }
+    ROWS=d.rows||[];
+    $('#status').classList.add('hidden'); $('#dashboard').classList.remove('hidden');
+    buildFilter(); render();
+  }catch(err){ $('#status').textContent=err.message+' Check the URL, and that the web app is deployed with access "Anyone".'; }
+}
+
+$('#load').addEventListener('click',load);
+$('#companyFilter').addEventListener('change',render);
+// remember + allow ?url= &key= prefill
+(function(){
+  const q=new URLSearchParams(location.search);
+  $('#url').value=q.get('url')||localStorage.getItem('bdt_url')||'';
+  $('#key').value=q.get('key')||localStorage.getItem('bdt_key')||'';
+  if($('#url').value&&$('#key').value) load();
+})();
+</script>
+</body>
+</html>
