@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Brain Dominance Test | Bootleg</title>
+<meta name="description" content="Whole-Brain Thinking Profile by Bootleg. Discover your dominant thinking style." />
+<link rel="icon" href="favicon.png" type="image/png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://api.fontshare.com">
+<link rel="preconnect" href="https://cdn.fontshare.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="#">
+      <img src="logo-mark.png" alt="" class="mark" />
+      <span class="brand-name">bootleg</span>
+    </a>
+    <span class="header-tag">Whole-Brain&reg; Profile</span>
+  </div>
+</header>
+
+<main>
+  <!-- INTRO -->
+  <section id="screen-intro" class="screen">
+    <div class="hero wrap">
+      <img src="logo-lockup.png" alt="cia bootleg manila" class="hero-lockup" />
+      <div class="eyebrow">Brain Dominance Test</div>
+      <h1>How do you<br>naturally think?</h1>
+      <p class="lede">A short profile that maps your preferences across four thinking styles. Answer honestly, and see where your brain leans when it works, decides, and creates.</p>
+    </div>
+
+    <div class="wrap narrow">
+      <div class="style-grid" id="style-grid"></div>
+
+      <div class="panel">
+        <div class="panel-label">Your details</div>
+        <div id="participant-fields" class="fields"></div>
+        <button id="start-btn" class="btn btn-primary btn-block">Start the test <span class="arr">&rarr;</span></button>
+        <p class="fineprint">About 8-10 minutes &middot; No right or wrong answers &middot; Your responses stay in your browser.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 1 -->
+  <section id="screen-likert" class="screen hidden">
+    <div class="wrap narrow">
+      <div class="section-head">
+        <div class="eyebrow">Section 1 / Preferences</div>
+        <h2>How much does each sound like you?</h2>
+      </div>
+      <div id="likert-list" class="qlist"></div>
+      <div class="nav-row">
+        <button class="btn btn-ghost" data-goto="intro">&larr; Back</button>
+        <button id="to-forced" class="btn btn-primary">Continue <span class="arr">&rarr;</span></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 2 -->
+  <section id="screen-forced" class="screen hidden">
+    <div class="wrap narrow">
+      <div class="section-head">
+        <div class="eyebrow">Section 2 / Forced Choice</div>
+        <h2>Which is more like you?</h2>
+        <p class="sub">Pick one in every pair, even when it's a hard call.</p>
+      </div>
+      <div id="forced-list" class="qlist"></div>
+      <div class="nav-row">
+        <button class="btn btn-ghost" data-goto="likert">&larr; Back</button>
+        <button id="submit-btn" class="btn btn-primary">See my profile <span class="arr">&rarr;</span></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section id="screen-results" class="screen hidden">
+    <div class="wrap narrow">
+      <div id="results-content"></div>
+      <div class="nav-row no-print">
+        <button class="btn btn-ghost" data-goto="intro">Start over</button>
+        <button id="print-btn" class="btn btn-primary">Download / Print (PDF)</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer no-print">
+  <div class="wrap footer-inner">
+    <div class="foot-brand"><img src="logo-mark.png" alt="" class="mark sm"/><span>bootleg</span></div>
+    <span class="muted">Brain Dominance Test &middot; based on Ned Herrmann's Whole-Brain&reg; model</span>
+  </div>
+</footer>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
