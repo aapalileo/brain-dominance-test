@@ -104,4 +104,4 @@ const SHEET_ENDPOINT = "";
 // Companies for the "Company / Organization" dropdown. Add each client here so entries
 // stay consistent (prevents "Bootleg" vs "CIA Bootleg" splits). You can also send a
 // company-specific link that locks the value, e.g.  yoursite.vercel.app/?org=CIA%20Bootleg
-const COMPANIES = ["CIA Bootleg"];
+const COMPANIES = [];  // empty = free-text company box (people type anything)
